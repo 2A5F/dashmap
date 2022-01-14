@@ -1,6 +1,5 @@
 use super::mapref::multiple::{RefMulti, RefMutMulti};
 use super::util;
-use crate::t::Map;
 use crate::util::SharedValue;
 use crate::{DashMap, HashMap};
 use core::hash::{BuildHasher, Hash};
@@ -124,12 +123,11 @@ impl<'a, 'i, K: Clone + Hash + Eq, V: Clone, S: Clone + BuildHasher> Clone for I
     }
 }
 
-unsafe impl<'a, 'i, K, V, S, M> Send for Iter<'i, K, V, S, M>
+unsafe impl<'a, 'i, K, V, S> Send for Iter<'i, K, V, S>
 where
     K: 'a + Eq + Hash + Send,
     V: 'a + Send,
     S: 'a + BuildHasher + Clone,
-    M: Map<'a, K, V, S>,
 {
 }
 
@@ -138,12 +136,11 @@ where
     K: 'a + Eq + Hash + Sync,
     V: 'a + Sync,
     S: 'a + BuildHasher + Clone,
-    M: Map<'a, K, V, S>,
 {
 }
 
-impl<'a, K: Eq + Hash, V, S: 'a + BuildHasher + Clone, M: Map<'a, K, V, S>> Iter<'a, K, V, S, M> {
-    pub(crate) fn new(map: &'a M) -> Self {
+impl<'a, K: Eq + Hash, V, S: 'a + BuildHasher + Clone> Iter<'a, K, V, S> {
+    pub(crate) fn new(map: &'a DashMap<K, V, S>) -> Self {
         Self {
             map,
             shard_i: 0,
@@ -152,8 +149,8 @@ impl<'a, K: Eq + Hash, V, S: 'a + BuildHasher + Clone, M: Map<'a, K, V, S>> Iter
     }
 }
 
-impl<'a, K: Eq + Hash, V, S: 'a + BuildHasher + Clone, M: Map<'a, K, V, S>> Iterator
-    for Iter<'a, K, V, S, M>
+impl<'a, K: Eq + Hash, V, S: 'a + BuildHasher + Clone> Iterator
+    for Iter<'a, K, V, S>
 {
     type Item = RefMulti<'a, K, V, S>;
 
@@ -207,7 +204,6 @@ where
     K: 'a + Eq + Hash + Send,
     V: 'a + Send,
     S: 'a + BuildHasher + Clone,
-    M: Map<'a, K, V, S>,
 {
 }
 
@@ -216,14 +212,13 @@ where
     K: 'a + Eq + Hash + Sync,
     V: 'a + Sync,
     S: 'a + BuildHasher + Clone,
-    M: Map<'a, K, V, S>,
 {
 }
 
-impl<'a, K: Eq + Hash, V, S: 'a + BuildHasher + Clone, M: Map<'a, K, V, S>>
-    IterMut<'a, K, V, S, M>
+impl<'a, K: Eq + Hash, V, S: 'a + BuildHasher + Clone>
+    IterMut<'a, K, V, S>
 {
-    pub(crate) fn new(map: &'a M) -> Self {
+    pub(crate) fn new(map: &'a DashMap<K, V, S>) -> Self {
         Self {
             map,
             shard_i: 0,
@@ -232,8 +227,8 @@ impl<'a, K: Eq + Hash, V, S: 'a + BuildHasher + Clone, M: Map<'a, K, V, S>>
     }
 }
 
-impl<'a, K: Eq + Hash, V, S: 'a + BuildHasher + Clone, M: Map<'a, K, V, S>> Iterator
-    for IterMut<'a, K, V, S, M>
+impl<'a, K: Eq + Hash, V, S: 'a + BuildHasher + Clone> Iterator
+    for IterMut<'a, K, V, S>
 {
     type Item = RefMutMulti<'a, K, V, S>;
 

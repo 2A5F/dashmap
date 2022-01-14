@@ -8,7 +8,6 @@ mod read_only;
 mod serde;
 mod set;
 pub mod setref;
-mod t;
 mod util;
 
 #[cfg(feature = "rayon")]
@@ -31,7 +30,6 @@ use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 pub use read_only::ReadOnlyView;
 pub use set::DashSet;
 use std::collections::hash_map::RandomState;
-pub use t::Map;
 
 cfg_if! {
     if #[cfg(feature = "raw-api")] {
@@ -642,31 +640,34 @@ impl<'a, K: 'a + Eq + Hash, V: 'a, S: BuildHasher + Clone> DashMap<K, V, S> {
     }
 }
 
-impl<'a, K: 'a + Eq + Hash, V: 'a, S: 'a + BuildHasher + Clone> Map<'a, K, V, S>
-    for DashMap<K, V, S>
-{
+impl<'a, K: 'a + Eq + Hash, V: 'a, S: 'a + BuildHasher + Clone> DashMap<K, V, S> {
+    #[inline]
     fn _shard_count(&self) -> usize {
         self.shards.len()
     }
 
+    #[inline]
     unsafe fn _get_read_shard(&'a self, i: usize) -> &'a HashMap<K, V, S> {
         debug_assert!(i < self.shards.len());
 
         &*self.shards.get_unchecked(i).data_ptr()
     }
 
+    #[inline]
     unsafe fn _yield_read_shard(&'a self, i: usize) -> RwLockReadGuard<'a, HashMap<K, V, S>> {
         debug_assert!(i < self.shards.len());
 
         self.shards.get_unchecked(i).read()
     }
 
+    #[inline]
     unsafe fn _yield_write_shard(&'a self, i: usize) -> RwLockWriteGuard<'a, HashMap<K, V, S>> {
         debug_assert!(i < self.shards.len());
 
         self.shards.get_unchecked(i).write()
     }
 
+    #[inline]
     fn _insert(&self, key: K, value: V) -> Option<V> {
         let hash = self.hash_usize(&key);
 
@@ -679,6 +680,7 @@ impl<'a, K: 'a + Eq + Hash, V: 'a, S: 'a + BuildHasher + Clone> Map<'a, K, V, S>
             .map(|v| v.into_inner())
     }
 
+    #[inline]
     fn _remove<Q>(&self, key: &Q) -> Option<(K, V)>
     where
         K: Borrow<Q>,
@@ -693,6 +695,7 @@ impl<'a, K: 'a + Eq + Hash, V: 'a, S: 'a + BuildHasher + Clone> Map<'a, K, V, S>
         shard.remove_entry(key).map(|(k, v)| (k, v.into_inner()))
     }
 
+    #[inline]
     fn _remove_if<Q>(&self, key: &Q, f: impl FnOnce(&K, &V) -> bool) -> Option<(K, V)>
     where
         K: Borrow<Q>,
@@ -715,6 +718,7 @@ impl<'a, K: 'a + Eq + Hash, V: 'a, S: 'a + BuildHasher + Clone> Map<'a, K, V, S>
         }
     }
 
+    #[inline]
     fn _remove_if_mut<Q>(&self, key: &Q, f: impl FnOnce(&K, &mut V) -> bool) -> Option<(K, V)>
     where
         K: Borrow<Q>,
@@ -743,14 +747,17 @@ impl<'a, K: 'a + Eq + Hash, V: 'a, S: 'a + BuildHasher + Clone> Map<'a, K, V, S>
         }
     }
 
+    #[inline]
     fn _iter(&'a self) -> Iter<'a, K, V, S, DashMap<K, V, S>> {
         Iter::new(self)
     }
 
+    #[inline]
     fn _iter_mut(&'a self) -> IterMut<'a, K, V, S, DashMap<K, V, S>> {
         IterMut::new(self)
     }
 
+    #[inline]
     fn _get<Q>(&'a self, key: &Q) -> Option<Ref<'a, K, V, S>>
     where
         K: Borrow<Q>,
@@ -775,6 +782,7 @@ impl<'a, K: 'a + Eq + Hash, V: 'a, S: 'a + BuildHasher + Clone> Map<'a, K, V, S>
         }
     }
 
+    #[inline]
     fn _get_mut<Q>(&'a self, key: &Q) -> Option<RefMut<'a, K, V, S>>
     where
         K: Borrow<Q>,
@@ -799,24 +807,29 @@ impl<'a, K: 'a + Eq + Hash, V: 'a, S: 'a + BuildHasher + Clone> Map<'a, K, V, S>
         }
     }
 
+    #[inline]
     fn _shrink_to_fit(&self) {
         self.shards.iter().for_each(|s| s.write().shrink_to_fit());
     }
 
+    #[inline]
     fn _retain(&self, mut f: impl FnMut(&K, &mut V) -> bool) {
         self.shards
             .iter()
             .for_each(|s| s.write().retain(|k, v| f(k, v.get_mut())));
     }
 
+    #[inline]
     fn _len(&self) -> usize {
         self.shards.iter().map(|s| s.read().len()).sum()
     }
 
+    #[inline]
     fn _capacity(&self) -> usize {
         self.shards.iter().map(|s| s.read().capacity()).sum()
     }
 
+    #[inline]
     fn _alter<Q>(&self, key: &Q, f: impl FnOnce(&K, V) -> V)
     where
         K: Borrow<Q>,
@@ -827,6 +840,7 @@ impl<'a, K: 'a + Eq + Hash, V: 'a, S: 'a + BuildHasher + Clone> Map<'a, K, V, S>
         }
     }
 
+    #[inline]
     fn _alter_all(&self, mut f: impl FnMut(&K, V) -> V) {
         self.shards.iter().for_each(|s| {
             s.write()
@@ -835,6 +849,7 @@ impl<'a, K: 'a + Eq + Hash, V: 'a, S: 'a + BuildHasher + Clone> Map<'a, K, V, S>
         });
     }
 
+    #[inline]
     fn _view<Q, R>(&self, key: &Q, f: impl FnOnce(&K, &V) -> R) -> Option<R>
     where
         K: Borrow<Q>,
@@ -846,6 +861,7 @@ impl<'a, K: 'a + Eq + Hash, V: 'a, S: 'a + BuildHasher + Clone> Map<'a, K, V, S>
         })
     }
 
+    #[inline]
     fn _entry(&'a self, key: K) -> Entry<'a, K, V, S> {
         let hash = self.hash_usize(&key);
 
@@ -866,8 +882,28 @@ impl<'a, K: 'a + Eq + Hash, V: 'a, S: 'a + BuildHasher + Clone> Map<'a, K, V, S>
         }
     }
 
+    #[inline]
     fn _hasher(&self) -> S {
         self.hasher.clone()
+    }
+
+    #[inline]
+    fn _clear(&self) {
+        self._retain(|_, _| false)
+    }
+
+    #[inline]
+    fn _contains_key<Q>(&'a self, key: &Q) -> bool
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq + ?Sized,
+    {
+        self._get(key).is_some()
+    }
+
+    #[inline]
+    fn _is_empty(&self) -> bool {
+        self._len() == 0
     }
 }
 

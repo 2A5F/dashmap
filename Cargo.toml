@@ -1,5 +1,5 @@
 [package]
-name = "dashmap"
+name = "dashmap_with_out_t_map_trait"
 version = "5.0.0"
 authors = ["Acrimon <joel.wejdenstal@gmail.com>"]
 edition = "2018"

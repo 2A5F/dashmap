@@ -1,5 +1,4 @@
 use crate::setref::multiple::RefMulti;
-use crate::t::Map;
 use core::hash::{BuildHasher, Hash};
 
 pub struct OwningIter<K, S> {
@@ -34,34 +33,32 @@ where
 {
 }
 
-pub struct Iter<'a, K, S, M> {
-    inner: crate::iter::Iter<'a, K, (), S, M>,
+pub struct Iter<'a, K, S> {
+    inner: crate::iter::Iter<'a, K, (), S>,
 }
 
-unsafe impl<'a, 'i, K, S, M> Send for Iter<'i, K, S, M>
+unsafe impl<'a, 'i, K, S> Send for Iter<'i, K, S>
 where
     K: 'a + Eq + Hash + Send,
     S: 'a + BuildHasher + Clone,
-    M: Map<'a, K, (), S>,
 {
 }
 
-unsafe impl<'a, 'i, K, S, M> Sync for Iter<'i, K, S, M>
+unsafe impl<'a, 'i, K, S> Sync for Iter<'i, K, S>
 where
     K: 'a + Eq + Hash + Sync,
     S: 'a + BuildHasher + Clone,
-    M: Map<'a, K, (), S>,
 {
 }
 
-impl<'a, K: Eq + Hash, S: 'a + BuildHasher + Clone, M: Map<'a, K, (), S>> Iter<'a, K, S, M> {
-    pub(crate) fn new(inner: crate::iter::Iter<'a, K, (), S, M>) -> Self {
+impl<'a, K: Eq + Hash, S: 'a + BuildHasher + Clone> Iter<'a, K, S> {
+    pub(crate) fn new(inner: crate::iter::Iter<'a, K, (), S>) -> Self {
         Self { inner }
     }
 }
 
-impl<'a, K: Eq + Hash, S: 'a + BuildHasher + Clone, M: Map<'a, K, (), S>> Iterator
-    for Iter<'a, K, S, M>
+impl<'a, K: Eq + Hash, S: 'a + BuildHasher + Clone> Iterator
+    for Iter<'a, K, S>
 {
     type Item = RefMulti<'a, K, S>;
 
